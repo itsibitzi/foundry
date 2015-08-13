@@ -1,6 +1,7 @@
 //extern crate cargo;
 extern crate gl;
 extern crate sdl2;
+extern crate sdl2_ttf;
 
 use render::Window;
 

@@ -1,5 +1,3 @@
-use cargo::util::CargoResult;
-
 pub struct Project {
     name: String,
 }
