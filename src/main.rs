@@ -1,5 +1,7 @@
-#![feature(plugin)]
+#![feature(alloc, plugin)]
 #![plugin(docopt_macros)]
+
+extern crate alloc;
 
 //extern crate cargo;
 extern crate docopt;
@@ -11,6 +13,7 @@ extern crate sdl2_ttf;
 use render::Window;
 use session::Buffer;
 
+mod gap_buffer;
 mod render;
 mod session;
 
@@ -51,22 +54,31 @@ fn main() {
 
     verboseln!("{:?}", args);
 
-    sdl2_ttf::init();
+    let mut buf = gap_buffer::GapBuffer::new();
+    buf.insert('a');
+    buf.insert('b');
+    buf.insert('c');
+    buf.insert('e');
+    buf.move_left();
+    buf.insert('d');
+    println!("{:?}", buf.raw_buffer());
 
-    let mut buffer = Buffer::new();
+    //sdl2_ttf::init();
 
-    let mut window = Window::new("Foundry", 800, 600);
+    //let mut buffer = Buffer::new();
 
-    loop {
-        window.process_events();
-        if window.should_close() {
-            break;
-        }
+    //let mut window = Window::new("Foundry", 800, 600);
 
-        window.write("baws");
+    //loop {
+        //window.process_events();
+        //if window.should_close() {
+            //break;
+        //}
 
-        window.present();
-    }
+        //window.write("baws");
 
-    sdl2_ttf::quit();
+        //window.present();
+    //}
+
+    //sdl2_ttf::quit();
 }
