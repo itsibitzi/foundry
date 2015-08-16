@@ -1,4 +1,4 @@
-#![feature(alloc, plugin)]
+#![feature(alloc, heap_api, oom, plugin, unique)]
 #![plugin(docopt_macros)]
 
 extern crate alloc;
@@ -61,7 +61,6 @@ fn main() {
     buf.insert('e');
     buf.move_left();
     buf.insert('d');
-    println!("{:?}", buf.raw_buffer());
 
     //sdl2_ttf::init();
 
