@@ -14,8 +14,6 @@ pub fn is_verbose() -> bool {
 
 macro_rules! verboseln(
     ($($arg:tt)*) => ({
-        // Will require that the common module is imported as exactly 'gensokyo_common' but not the
-        // end of the world.
         if ::utils::is_verbose() {
             println!($($arg)*);
         }
