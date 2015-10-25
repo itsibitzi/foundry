@@ -1,3 +1,4 @@
+/*
 use std::ptr::Unique;
 use std::mem;
 
@@ -50,3 +51,4 @@ impl Drop for GapBuffer {
         }
     }
 }
+*/

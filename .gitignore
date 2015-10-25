@@ -1,5 +1,6 @@
 target
 Cargo.lock
+.foundry
 
 # Windows machines need the SDL2 dll to side beside the Cargo.toml
 SDL2.dll

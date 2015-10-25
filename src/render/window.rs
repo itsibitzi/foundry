@@ -1,80 +1,75 @@
+use std::fs::File;
 use std::path::Path;
+use std::sync::mpsc;
+use std::sync::mpsc::{Sender, Receiver};
 
-use sdl2;
-use sdl2::Sdl;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::Renderer;
-use sdl2_ttf::Font;
+use glium::backend::Facade;
+use glium::backend::glutin_backend::GlutinFacade;
+use glium::DisplayBuild;
+use glium::glutin::{Event, WindowBuilder};
+use glium::Surface;
+use glium_text;
+use glium_text::{FontTexture, TextDisplay, TextSystem};
 
-pub struct Window<'a> {
-    context: Sdl,
-    renderer: Renderer<'a>,
-    should_close: bool,
+use super::RenderMessage;
+use super::matrix;
+
+pub struct Window {
+    display: GlutinFacade,
+    text_system: TextSystem,
+    font: FontTexture,
+    tx: Sender<RenderMessage>,
+    rx: Receiver<RenderMessage>,
 }
 
-impl<'a> Window<'a> {
-    pub fn new(title: &str, width: u32, height: u32) -> Window<'a> {
-        let sdl_context = match sdl2::init().video().build() {
-            Ok(sdl) => sdl,
-            // Can't meaningfully do anything - will replace panics later
-            Err(why) => panic!("Failed to create sdl context: {}", why),
-        };
+impl Window {
+    pub fn new(title: &str, width: u32, height: u32) -> Window {
+        let display = WindowBuilder::new()
+            .with_title(title.to_string())
+            .with_dimensions(width, height)
+            .with_vsync()
+            .build_glium()
+            .unwrap();
 
-        let window = match sdl_context.window(title, width, height).opengl().build() {
-            Ok(window) => window,
-            Err(why) => panic!("Failed to create a window: {}", why),
-        };
+        let text_system = TextSystem::new(&display);
 
-        let mut renderer = match window.renderer().accelerated().present_vsync().build() {
-            Ok(renderer) => renderer,
-            Err(why) => panic!("Failed to create renderer: {}", why),
-        };
+        let font = FontTexture::new(&display, File::open("fonts/NotoSans/NotoSans-Regular.ttf").unwrap(), 24).unwrap();
+
+        let (tx, rx) = mpsc::channel();
 
         Window {
-            context: sdl_context,
-            renderer: renderer,
-            should_close: false,
+            display: display,
+            tx: tx,
+            rx: rx,
         }
     }
 
-    pub fn process_events(&mut self) {
-        for event in self.context.event_pump().poll_iter() {
-            use sdl2::event::Event;
-            use sdl2::keyboard::Keycode;
+    pub fn new_sender(&mut self) -> Sender<RenderMessage> {
+        self.tx.clone()
+    }
 
-            match event {
-                Event::Quit{..} | Event::KeyDown {keycode: Some(Keycode::Escape), ..} => self.should_close = true,
-                _ => {},
+    pub fn run(&mut self) {
+        loop {
+            let mut target = self.display.draw();
+            target.clear_color(1.0, 0.0, 0.0, 1.0);
+
+            match self.rx.try_recv() {
+                Ok(msg) => target.clear_color(msg.redness, 0.0, 0.0, 1.0),
+                Err(why) => {},
+            }
+
+            let text = TextDisplay::new(&self.text_system, &self.font, "This is a tribute!");
+
+            glium_text::draw(&text, &self.text_system, &mut target, matrix::IDENTITY, (1.0, 1.0, 1.0, 1.0));
+
+            target.finish().unwrap();
+
+            for ev in self.display.poll_events() {
+                match ev {
+                    Event::Closed => return,
+                    _ => {},
+                }
             }
         }
-    }
-
-    pub fn should_close(&self) -> bool {
-        self.should_close
-    }
-
-    pub fn present(&mut self) {
-        self.renderer.clear();
-        self.renderer.present();
-    }
-
-    pub fn write(&mut self, text: &str) {
-        let font = Font::from_file(&Path::new("fonts/NotoSans/NotoSans-Regular.ttf"), 28).unwrap();
-
-        let surface = font.render_str_blended(text, Color::RGBA(200, 0, 0, 255)).unwrap();
-        let mut texture = self.renderer.create_texture_from_surface(&surface).unwrap();
-
-        self.renderer.set_draw_color(Color::RGBA(195, 217, 255, 255));
-        self.renderer.clear();
-
-        let (w, h) = {
-            let q = texture.query();
-            (q.width, q.height)
-        };
-        println!("{}, {}", w, h);
-
-        self.renderer.copy(&mut texture, None, Rect::new(((800 - w) / 2) as i32, ((600 - h) / 2) as i32, w, h).unwrap());
-        self.present();
     }
 }
