@@ -11,7 +11,11 @@ extern crate docopt;
 #[macro_use]
 extern crate glium;
 extern crate glium_text;
+#[macro_use]
+extern crate quick_error;
 extern crate rustc_serialize;
+
+extern crate math;
 
 use std::fs::File;
 use std::sync::mpsc;
@@ -19,8 +23,9 @@ use std::thread;
 
 use glium::{DisplayBuild, glutin, Surface};
 
+use math::{Matrix, Point};
 use project::Project;
-use render::{RenderMessage};
+use render::{RenderMessage, TextPanel};
 
 mod gap_buffer;
 mod project;
@@ -69,14 +74,14 @@ fn main() {
 
     let display = glutin::WindowBuilder::new()
         .with_title("Foundry".to_string())
-        .with_dimensions(800, 600)
+        .with_dimensions(1920, 1080)
         .with_vsync()
         .build_glium()
         .unwrap();
 
     // Text
     let text_system = glium_text::TextSystem::new(&display);
-    let font = glium_text::FontTexture::new(&display, File::open(args.flag_font).unwrap(), 24).unwrap();
+    let font = glium_text::FontTexture::new(&display, File::open(args.flag_font).unwrap(), 12).unwrap();
     let text = glium_text::TextDisplay::new(&text_system, &font, "This is a tribute!");
 
     // Async rendering stuff
@@ -95,7 +100,11 @@ fn main() {
         }
     });
 
+    let mut offset = 0.0;
     loop {
+        offset += 0.01;
+        let (w, h) = display.get_framebuffer_dimensions();
+
         let mut target = display.draw();
         target.clear_color(1.0, 0.0, 0.0, 1.0);
 
@@ -104,7 +113,15 @@ fn main() {
             Err(why) => {},
         }
 
-        glium_text::draw(&text, &text_system, &mut target, render::matrix::IDENTITY, (1.0, 1.0, 1.0, 1.0));
+        let text_width = text.get_width();
+        let matrix = [
+            [2.0 / text_width, 0.0, 0.0, 0.0],
+            [0.0, 2.0 * w as f32 / h as f32 / text_width, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [f32::sin(offset), -1.0, 0.0, 1.0],
+        ];
+
+        glium_text::draw(&text, &text_system, &mut target, matrix, (1.0, 1.0, 1.0, 1.0));
 
         target.finish().unwrap();
 

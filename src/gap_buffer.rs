@@ -51,4 +51,5 @@ impl Drop for GapBuffer {
         }
     }
 }
+                println!("BAIL!");
 */
