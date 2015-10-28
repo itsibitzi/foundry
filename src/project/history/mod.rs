@@ -68,7 +68,7 @@ impl Id {
                     unsafe {sha1.input(&mem::transmute::<_, [u8; 8]>(line))}
                     sha1.input_str(&text)
                 },
-                &LineChange::Removed {ref line, text: ref text} => {
+                &LineChange::Removed {ref line, ref text} => {
                     sha1.input_str("removed");
                     unsafe {sha1.input(&mem::transmute::<_, [u8; 8]>(line))}
                     sha1.input_str(&text)

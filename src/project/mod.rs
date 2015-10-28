@@ -7,7 +7,6 @@ use cargo::util::Config;
 
 mod history;
 
-static PROJECT_METADATA_DIR: &'static str = ".foundry";
 static PROJECT_HISTORY_DIR: &'static str = ".foundry/history";
 
 static CARGO_OUT: &'static str = ".foundry/cargo.out";
@@ -21,7 +20,10 @@ pub struct Project {
 
 impl Project {
     pub fn open(verbose: bool) -> Project {
-        DirBuilder::new().recursive(true).create(PROJECT_HISTORY_DIR);
+        if let Err(why) = DirBuilder::new().recursive(true).create(PROJECT_HISTORY_DIR) {
+            // TODO: Clean me up - remove panic
+            panic!("IO Failure in creating .foundry project directories");
+        }
 
         fn create_project_shell<P: AsRef<Path>>(path: P) -> Shell {
             let file = OpenOptions::new().write(true).append(true).create(true).open(path).unwrap();
